@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"github.com/carlca/goprefix/output"
+	"github.com/carlca/gowig/output"
 )
 
 func main() {
@@ -20,11 +20,11 @@ func main() {
 	}
 
 	p := output.Param{"device", "Chain"}
-	streamPos := 0x
+	// streamPos := 0x
 	fmt.Println(p.Key)
 	fmt.Println(p.Value)
 }
 
 func GetChunk(streamPos int64, data []byte) int64 {
-	
+	return 0
 }
