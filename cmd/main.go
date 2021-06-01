@@ -17,6 +17,7 @@ func main() {
 		fmt.Println("File reading error", err)
 		return
 	}
+	defer f.Close()
 
 	// fmt.Println(len(data))
 	// if err != nil {
@@ -26,17 +27,7 @@ func main() {
 	p := output.Param{"device", "Chain"}
 	fmt.Println(p.Key)
 	fmt.Println(p.Value)
-
-	streamPos := 0x3e
-	chunk, err := readFromFile(f, streamPos, 4) //read 4 bytes in the file from byte 0x3e
-
-	var size int64
-	buf := bytes.NewReader(chunk)
-	err = binary.Read(buf, binary.LittleEndian, &size)
-	if err != nil {
-		fmt.Println("binary.Read failed:", err)
-	}
-	fmt.Println(size)
+	
 
 }
 
