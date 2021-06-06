@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
-
-	"github.com/carlca/gowig/output"
 )
 
 func main() {
@@ -21,34 +19,63 @@ func GenerateDummyOutput() {
 	fmt.Println()
 }
 
-func ProcessPreset(filename string) {
+func ProcessPreset(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		fmt.Println("File reading error", err)
-		return
+		return err
 	}
 	defer f.Close()
 
-	p := output.Param{"device", "Chain"}
-	fmt.Println(p.Key)
-	fmt.Println(p.Value)
-
-	streamPos := 0x7f
-	chunk, err := readFromFile(f, streamPos, 4)
-
+	var streamPos int32 = 0x7f
 	var size int32
-	buf := bytes.NewReader(chunk)
-	err = binary.Read(buf, binary.BigEndian, &size)
-	if err != nil {
-		fmt.Println("binary.Read failed:", err)
+	var text string
+
+	if streamPos, size, err = readIntChunk(f, streamPos); err != nil {
+		return err
 	}
-	fmt.Println(size)
+	fmt.Println("size: ", size)
+	fmt.Println("stringPos: ", streamPos)
+
+	if streamPos, size, text, err = readTextChunk(f, streamPos, size); err != nil {
+		return err
+	}
+
+	fmt.Println("size: ", size)
+	fmt.Println("stringPos: ", streamPos)
+	fmt.Println("text: ", text)
+
+	return nil
 }
 
-func readFromFile(file *os.File, offset, size int) ([]byte, error) {
+func readIntChunk(f *os.File, streamPos int32) (int32, int32, error) {
+	var chunk []byte
+	var err error
+	if streamPos, chunk, err = readFromFile(f, streamPos, 4); err != nil {
+		return 0, 0, err
+	}
+	var size int32
+	buf := bytes.NewReader(chunk)
+	if binary.Read(buf, binary.BigEndian, &size); err != nil {
+		return 0, 0, err
+	}
+	return streamPos, size, nil
+}
+
+func readTextChunk(f *os.File, streamPos, size int32) (int32, int32, string, error) {
+	var chunk []byte
+	var err error
+	if streamPos, chunk, err = readFromFile(f, streamPos, size); err != nil {
+		return 0, 0, "", err
+	}
+	return streamPos, size, string(chunk), nil
+}
+
+func readFromFile(file *os.File, offset, size int32) (int32, []byte, error) {
 	res := make([]byte, size)
 	if _, err := file.ReadAt(res, int64(offset)); err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return res, nil
+	newStreamPos := offset + size
+	return newStreamPos, res, nil
 }
