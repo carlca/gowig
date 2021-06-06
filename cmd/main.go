@@ -10,8 +10,18 @@ import (
 )
 
 func main() {
-	filename := os.Args[1]
+	if len(os.Args) == 1 {
+		GenerateDummyOutput()
+	} else {
+		ProcessPreset(os.Args[1])
+	}
+}
 
+func GenerateDummyOutput() {
+	fmt.Println()
+}
+
+func ProcessPreset(filename string) {
 	f, err := os.Open(filename)
 	if err != nil {
 		fmt.Println("File reading error", err)
@@ -19,17 +29,12 @@ func main() {
 	}
 	defer f.Close()
 
-	// fmt.Println(len(data))
-	// if err != nil {
-	// 	fmt.Println("File printing error", err)
-	// }
-
 	p := output.Param{"device", "Chain"}
 	fmt.Println(p.Key)
 	fmt.Println(p.Value)
 
 	streamPos := 0x7f
-	chunk, err := readFromFile(f, streamPos, 4) //read 4 bytes in the file from byte 0x7f
+	chunk, err := readFromFile(f, streamPos, 4)
 
 	var size int32
 	buf := bytes.NewReader(chunk)
