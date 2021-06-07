@@ -35,7 +35,7 @@ func ProcessPreset(filename string) error {
 	}
 	defer f.Close()
 
-	var streamPos int32 = 0x3a
+	var streamPos int32 = 0x36
 	var size int32
 
 	for {
@@ -54,15 +54,21 @@ func readKeyAndValue(f *os.File, streamPos int32) (int32, int32, error) {
 	var text string
 	var err error
 
+	streamPos = streamPos + 4
+
 	if streamPos, size, text, err = readNextSizeAndChunk(f, streamPos); err == nil {
 		if size == 0 {
 			return 0, 0, nil
 		}
 		printOutput(size, streamPos, text)
+
 		streamPos++
+
 		if streamPos, size, text, err = readNextSizeAndChunk(f, streamPos); err == nil {
 			printOutput(size, streamPos, text)
-			streamPos = streamPos + 4
+
+			//streamPos = streamPos + 4
+
 			return size, streamPos, nil
 		}
 	}
