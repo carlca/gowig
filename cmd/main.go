@@ -54,25 +54,36 @@ func readKeyAndValue(f *os.File, streamPos int32) (int32, int32, error) {
 	var text string
 	var err error
 
-	streamPos = streamPos + 4
-
+	streamPos = streamPos + getSkipSize(f, streamPos)
 	if streamPos, size, text, err = readNextSizeAndChunk(f, streamPos); err == nil {
 		if size == 0 {
 			return 0, 0, nil
 		}
 		printOutput(size, streamPos, text)
 
-		streamPos++
+		streamPos = streamPos + getSkipSize(f, streamPos)
 
 		if streamPos, size, text, err = readNextSizeAndChunk(f, streamPos); err == nil {
 			printOutput(size, streamPos, text)
 
-			//streamPos = streamPos + 4
+			fmt.Println()
 
 			return size, streamPos, nil
 		}
 	}
 	return 0, 0, err
+}
+
+func getSkipSize(f *os.File, streamPos int32) int32 {
+	_, bytes, _ := readFromFile(f, streamPos, 16, false)
+	for _, value := range bytes {
+		fmt.Printf("%02x ", value)
+	}
+	fmt.Printf("\n")
+	if bytes[4] == 0 {
+		return 4
+	}
+	return 1
 }
 
 func printOutput(size int32, streamPos int32, text string) {
@@ -97,7 +108,7 @@ func readNextSizeAndChunk(f *os.File, streamPos int32) (int32, int32, string, er
 func readIntChunk(f *os.File, streamPos int32) (int32, int32, error) {
 	var chunk []byte
 	var err error
-	if streamPos, chunk, err = readFromFile(f, streamPos, 4); err != nil {
+	if streamPos, chunk, err = readFromFile(f, streamPos, 4, true); err != nil {
 		return 0, 0, err
 	}
 	var size int32
@@ -111,17 +122,20 @@ func readIntChunk(f *os.File, streamPos int32) (int32, int32, error) {
 func readTextChunk(f *os.File, streamPos, size int32) (int32, int32, string, error) {
 	var chunk []byte
 	var err error
-	if streamPos, chunk, err = readFromFile(f, streamPos, size); err != nil {
+	if streamPos, chunk, err = readFromFile(f, streamPos, size, true); err != nil {
 		return 0, 0, "", err
 	}
 	return streamPos, size, string(chunk), nil
 }
 
-func readFromFile(file *os.File, offset, size int32) (int32, []byte, error) {
+func readFromFile(file *os.File, streamPos, size int32, advance bool) (int32, []byte, error) {
 	res := make([]byte, size)
-	if _, err := file.ReadAt(res, int64(offset)); err != nil {
+	if _, err := file.ReadAt(res, int64(streamPos)); err != nil {
 		return 0, nil, err
 	}
-	newStreamPos := offset + size
+	newStreamPos := streamPos
+	if advance {
+		newStreamPos = streamPos + size
+	}
 	return newStreamPos, res, nil
 }
