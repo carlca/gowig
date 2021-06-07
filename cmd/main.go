@@ -71,17 +71,12 @@ func readNextSizeAndChunk(f *os.File, streamPos int32) (int32, int32, string, er
 	var size int32
 	var text string
 	var err error
-
 	if streamPos, size, err = readIntChunk(f, streamPos); err != nil {
 		return 0, 0, "", err
 	}
-	fmt.Println("size: ", size)
-	fmt.Printf("stringPos: %X\n", streamPos)
-
 	if streamPos, size, text, err = readTextChunk(f, streamPos, size); err != nil {
 		return 0, 0, "", err
 	}
-
 	return streamPos, size, text, nil
 }
 
