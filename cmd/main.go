@@ -1,9 +1,12 @@
 package main
 
+// Let @crossm0d know how it's going, and add in date/time tags
+
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -22,8 +25,7 @@ func GenerateDummyOutput() {
 func ProcessPreset(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
-		fmt.Println("File reading error", err)
-		return err
+		log.Fatal(err)
 	}
 	defer f.Close()
 
@@ -31,21 +33,56 @@ func ProcessPreset(filename string) error {
 	var size int32
 	var text string
 
-	if streamPos, size, err = readIntChunk(f, streamPos); err != nil {
-		return err
-	}
-	fmt.Println("size: ", size)
-	fmt.Println("stringPos: ", streamPos)
-
-	if streamPos, size, text, err = readTextChunk(f, streamPos, size); err != nil {
+	if streamPos, size, text, err = readNextSizeAndChunk(f, streamPos); err != nil {
 		return err
 	}
 
 	fmt.Println("size: ", size)
-	fmt.Println("stringPos: ", streamPos)
+	fmt.Printf("stringPos: %X\n", streamPos)
+	fmt.Println("text: ", text)
+
+	streamPos++
+
+	if streamPos, size, text, err = readNextSizeAndChunk(f, streamPos); err != nil {
+		return err
+	}
+
+	fmt.Println("size: ", size)
+	fmt.Printf("stringPos: %X\n", streamPos)
+	fmt.Println("text: ", text)
+
+	streamPos++
+	streamPos++
+	streamPos++
+	streamPos++
+
+	if streamPos, size, text, err = readNextSizeAndChunk(f, streamPos); err != nil {
+		return err
+	}
+
+	fmt.Println("size: ", size)
+	fmt.Printf("stringPos: %X\n", streamPos)
 	fmt.Println("text: ", text)
 
 	return nil
+}
+
+func readNextSizeAndChunk(f *os.File, streamPos int32) (int32, int32, string, error) {
+	var size int32
+	var text string
+	var err error
+
+	if streamPos, size, err = readIntChunk(f, streamPos); err != nil {
+		return 0, 0, "", err
+	}
+	fmt.Println("size: ", size)
+	fmt.Printf("stringPos: %X\n", streamPos)
+
+	if streamPos, size, text, err = readTextChunk(f, streamPos, size); err != nil {
+		return 0, 0, "", err
+	}
+
+	return streamPos, size, text, nil
 }
 
 func readIntChunk(f *os.File, streamPos int32) (int32, int32, error) {
