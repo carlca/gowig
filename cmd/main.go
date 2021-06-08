@@ -75,9 +75,17 @@ func readKeyAndValue(f *os.File, streamPos int32) (int32, int32, error) {
 }
 
 func getSkipSize(f *os.File, streamPos int32) int32 {
-	_, bytes, _ := readFromFile(f, streamPos, 16, false)
+	_, bytes, _ := readFromFile(f, streamPos, 32, false)
 	for _, value := range bytes {
 		fmt.Printf("%02x ", value)
+	}
+	fmt.Printf("\n")
+	for _, value := range bytes {
+		if value >= 0x41 {
+			fmt.Printf(".%c.", value)
+		} else {
+			fmt.Printf("   ")
+		}
 	}
 	fmt.Printf("\n")
 	if bytes[4] == 0 {
