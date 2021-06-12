@@ -20,7 +20,12 @@ func main() {
 	if len(os.Args) == 1 {
 		GenerateDummyOutput()
 	} else {
-		ProcessPreset(os.Args[1])
+		if len(os.Args) == 3 {
+			ProcessPreset(os.Args[1], os.Args[2] == "debug")
+		} else {
+			nodbg := false
+			ProcessPreset(os.Args[1], nodbg)
+		}
 	}
 }
 
@@ -28,7 +33,7 @@ func GenerateDummyOutput() {
 	fmt.Println()
 }
 
-func ProcessPreset(filename string) error {
+func ProcessPreset(filename string, debug bool) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -39,7 +44,7 @@ func ProcessPreset(filename string) error {
 	var size int32
 
 	for {
-		if size, streamPos, err = readKeyAndValue(f, streamPos); err != nil {
+		if size, streamPos, err = readKeyAndValue(f, streamPos, debug); err != nil {
 			return err
 		}
 		if size == 0 {
@@ -49,19 +54,30 @@ func ProcessPreset(filename string) error {
 	return nil
 }
 
-func readKeyAndValue(f *os.File, streamPos int32) (int32, int32, error) {
+func readKeyAndValue(f *os.File, streamPos int32, debug bool) (int32, int32, error) {
 	var size int32
 	var text string
 	var err error
 
-	streamPos = streamPos + getSkipSize(f, streamPos)
+	skips := getSkipSize(f, streamPos)
+	if debug {
+		getSkipSizeDebug(f, streamPos)
+		fmt.Printf("%d skips\n", skips)
+	}
+	streamPos = streamPos + skips
+
 	if streamPos, size, text, err = readNextSizeAndChunk(f, streamPos); err == nil {
 		if size == 0 {
 			return 0, 0, nil
 		}
 		printOutput(size, streamPos, text)
 
-		streamPos = streamPos + getSkipSize(f, streamPos)
+		skips := getSkipSize(f, streamPos)
+		if debug {
+			getSkipSizeDebug(f, streamPos)
+			fmt.Printf("%d skips\n", skips)
+		}
+		streamPos = streamPos + skips
 
 		if streamPos, size, text, err = readNextSizeAndChunk(f, streamPos); err == nil {
 			printOutput(size, streamPos, text)
@@ -76,6 +92,26 @@ func readKeyAndValue(f *os.File, streamPos int32) (int32, int32, error) {
 
 func getSkipSize(f *os.File, streamPos int32) int32 {
 	_, bytes, _ := readFromFile(f, streamPos, 32, false)
+	check := []int{5, 8, 13}
+	for index, value := range bytes {
+		if (value >= 0x20) && (InSlice(check, index&255)) {
+			return int32(index) - 4
+		}
+	}
+	return 1
+}
+
+func InSlice(slice []int, element int) bool {
+	for _, by := range slice {
+		if by == element {
+			return true
+		}
+	}
+	return false
+}
+
+func getSkipSizeDebug(f *os.File, streamPos int32) {
+	_, bytes, _ := readFromFile(f, streamPos, 32, false)
 	for _, value := range bytes {
 		fmt.Printf("%02x ", value)
 	}
@@ -88,10 +124,6 @@ func getSkipSize(f *os.File, streamPos int32) int32 {
 		}
 	}
 	fmt.Printf("\n")
-	if bytes[4] == 0 {
-		return 4
-	}
-	return 1
 }
 
 func printOutput(size int32, streamPos int32, text string) {
