@@ -20,11 +20,15 @@ func main() {
 	if len(os.Args) == 1 {
 		GenerateDummyOutput()
 	} else {
+		nodbg := false
 		if len(os.Args) == 3 {
-			ProcessPreset(os.Args[1], os.Args[2] == "debug")
+			nodbg = os.Args[2] == "debug"
 		} else {
-			nodbg := false
-			ProcessPreset(os.Args[1], nodbg)
+			nodbg = false
+		}
+		err := ProcessPreset(os.Args[1], nodbg)
+		if err != nil {
+			return
 		}
 	}
 }
